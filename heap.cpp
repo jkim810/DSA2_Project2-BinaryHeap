@@ -3,7 +3,8 @@
 #include "hash.h"
 
 heap::heap(int capacity){
-	h = new hashTable(capacity);
+	data.resize(capacity+1);
+	mapping = new hashTable(capacity*2);
 }
 
 //
@@ -19,8 +20,9 @@ heap::heap(int capacity){
 //   2 if a node with the given id already exists (but the heap
 //     is not filled to capacity)
 //
+
 int heap::insert(const std::string &id, int key, void *pv){
-	h->insert(id);
+	node *nodeToInsert = new node(id, key, NULL);
 }
 
 //
@@ -51,7 +53,7 @@ int heap::setKey(const std::string &id, int key){
 //   1 if the heap is empty
 //
 int heap::deleteMin(std::string *pId, int *pKey, void *ppData){
-	
+	*(static_cast<void **> (ppData)) = data[1].pData;
 }
 
 //
@@ -67,6 +69,19 @@ int heap::deleteMin(std::string *pId, int *pKey, void *ppData){
 //
 int heap::remove(const std::string &id, int *pKey, void *ppData){
 	
+}
+
+
+heap::node::node(std::string &id, int key, void *pData)
+	:id(id), key(key), pData(pData){ }
+
+void percolateUp(int posCur);
+void percolateDown(int posCur);
+
+int heap::getPos(node *pn){
+	int pos = pn - &data[0];
+  	return pos;
+
 }
 
 int main(){
