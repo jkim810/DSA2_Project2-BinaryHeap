@@ -8,9 +8,29 @@
 // and the mapping (hash table) based on the specified capacity
 //
 class heap {
+
+private:
+	class node { // An inner class within heap
+	public:
+	    std::string id; // The id of this node
+	    int key; // The key of this node
+	    void *pData; // A pointer to the actual data
+
+	    node();
+	    node(std::string id, int key, void *pData);
+	};
+	
+	void percolateUp(int posCur);
+	void percolateDown(int posCur);
+	int getPos(node *pn);
+
 public:
+
 	heap(int capacity);
 	
+	std::vector<node> data; // The actual binary heap
+	hashTable *mapping; // maps ids to node pointers
+
 	//
 	// insert - Inserts a new node into the binary heap
 	//
@@ -66,7 +86,8 @@ public:
 	//
 	int remove(const std::string &id, int *pKey = NULL, void *ppData = NULL);
 	
-private:
-	hashTable *h;
+
+
 };
+
 #endif //_HEAP_H
