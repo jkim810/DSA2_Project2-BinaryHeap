@@ -8,7 +8,7 @@ hashTable::hashTable(int size){
 	data.assign(capacity, hashItem("",false,false,NULL));
 }
 
-int hashTable::insert(const std::string &key, int void *pv){
+int hashTable::insert(const std::string &key, void *pv){
 	if(capacity == 0 || filled > capacity/2){
 		if(rehash() == false){
 			return 2;
@@ -45,9 +45,17 @@ bool hashTable::contains(const std::string &key){
 hashTable::hashItem::hashItem(const std::string &key, bool isOccupied, bool isDeleted, void *pv)
     :key(key), isOccupied(isOccupied), isDeleted(isDeleted), pv(pv) { }
 
-//void *hashTable::getPointer(const std::string &key, bool *b){ }
-int hashTable::setPointer(const std::string &key, void *pv){ return -1; }
-bool hashTable::remove(const std::string &key){ return false; }
+void *hashTable::getPointer(const std::string &key, bool *b){
+
+}
+
+int hashTable::setPointer(const std::string &key, void *pv){
+
+}
+
+bool hashTable::remove(const std::string &key){
+	return false;
+}
 
 int hashTable::hash(const std::string &key){
 	int hashVal = 0;
