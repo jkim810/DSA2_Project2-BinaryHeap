@@ -1,89 +1,116 @@
-#include <iostream>
 #include "heap.h"
-#include "hash.h"
 
-heap::heap(int capacity){
-	data.resize(capacity+1);
-	mapping = new hashTable(capacity*2);
+//heap declaration
+heap::heap(int capacity) {
+	heap::capacity = capacity;
+	currSize = 0;
+	data.resize(capacity + 1);
+	mapping = new hashTable(capacity * 2);
 }
 
-//
-// insert - Inserts a new node into the binary heap
-//
-// Inserts a node with the specified id string, key,
-// and optionally a pointer. They key is used to
-// determine the final position of the new node.
-//
-// Returns:
-//   0 on success
-//   1 if the heap is already filled to capacity
-//   2 if a node with the given id already exists (but the heap
-//     is not filled to capacity)
-//
-
-int heap::insert(const std::string &id, int key, void *pv){
-	node *nodeToInsert = new node(id, key, NULL);
-}
-
-//
-// setKey - set the key of the specified node to the specified value
-//
-// I have decided that the class should provide this member function
-// instead of two separate increaseKey and decreaseKey functions.
-//
-// Returns:
-//   0 on success
-//   1 if a node with the given id does not exist
-//
-int heap::setKey(const std::string &id, int key){
+//percolate up used for insertions and increase key operations
+void heap::percolateUp(int posCur) {
+	if (posCur == 0) return;
 	
+	node tmp = data[posCur];
+	int hole = posCur;
+	//traverse up (bubble up) the heap
+	for (; (hole > 1) && (tmp.key < data[hole / 2].key); hole /= 2) {
+		data[hole] = data[hole / 2];
+		mapping->setPointer(data[hole].id, &data[hole]);
+	}
+	//modify heap and hashtable
+	data[hole] = tmp;
+	mapping->setPointer(data[hole].id,&data[hole]);
 }
 
-//
-// deleteMin - return the data associated with the smallest key
-//             and delete that node from the binary heap
-//
-// If pId is supplied (i.e., it is not NULL), write to that address
-// the id of the node being deleted. If pKey is supplied, write to
-// that address the key of the node being deleted. If ppData is
-// supplied, write to that address the associated void pointer.
-//
-// Returns:
-//   0 on success
-//   1 if the heap is empty
-//
-int heap::deleteMin(std::string *pId, int *pKey, void *ppData){
-	*(static_cast<void **> (ppData)) = data[1].pData;
+//percolate down used for deletions and decrease key operations
+void heap::percolateDown(int posCur) {
+	if (posCur == capacity || posCur == 0) return;
+
+	int child;
+	node tmp = data[posCur];
+	//traverse down the heap
+	for (; posCur * 2 <= currSize; posCur = child) {
+		if ((posCur * 2 == capacity) || (data[posCur * 2].key <= data[posCur * 2 + 1].key) && (tmp.key > data[posCur * 2].key)) {
+			data[posCur] = data[posCur * 2];
+			mapping->setPointer(data[posCur].id, &data[posCur]);
+			child = posCur * 2;
+		}
+		else if ((tmp.key > data[posCur*2+1].key)&&(data[posCur*2].key>data[posCur*2+1].key)){
+			data[posCur] = data[posCur * 2+1];
+			mapping->setPointer(data[posCur].id, &data[posCur]);
+			child = posCur * 2+1;
+		}
+		else break;
+	}
+	//modify heap and hashtable
+	data[posCur] = tmp;
+	mapping->setPointer(data[posCur].id, &data[posCur]);
 }
 
-//
-// remove - delete the node with the specified id from the binary heap
-//
-// If pKey is supplied, write to that address the key of the node
-// being deleted. If ppData is supplied, write to that address the
-// associated void pointer.
-//
-// Returns:
-//   0 on success
-//   1 if a node with the given id does not exist
-//
-int heap::remove(const std::string &id, int *pKey, void *ppData){
-	
+//simple function that returns whether the heap is empty
+bool heap::isEmpty() {
+	return currSize == 0?true:false;
 }
 
-
-heap::node::node(std::string &id, int key, void *pData)
-	:id(id), key(key), pData(pData){ }
-
-void percolateUp(int posCur);
-void percolateDown(int posCur);
-
-int heap::getPos(node *pn){
+//take a pointer from hashtable and return the position in heap
+int heap::getPos(node *pn) {
 	int pos = pn - &data[0];
-  	return pos;
-
+	return pos;
 }
 
-int main(){
+
+int heap::insert(const std::string &id, int key, void *pv) {
+	if (currSize == data.size() - 1) return 1;
+	if (mapping->contains(id)) return 2;
+	node tmp;
+	tmp.id = id;
+	tmp.key = key;
+	tmp.pData = pv;
+	data[++currSize] = tmp;
+
+	mapping->insert(id, &data[currSize]);
+	percolateUp(currSize);
+	return 0;
+}
+
+int heap::setKey(const std::string &id, int key) {
+	bool b;
+	node *pn = static_cast<node *>(mapping->getPointer(id, &b));
+	if (!b) return 1;
+	int pos = getPos(pn);
+	pn->key = key;
+	percolateUp(pos);
+	percolateDown(pos);
+	return 0;
+}
+
+
+int heap::deleteMin(std::string *pId, int *pKey, void *ppData) {
+	if (isEmpty()) return 1;
+	if (pId) *pId = data[1].id;
+	if (pKey) *pKey = data[1].key;
+	if(ppData) *(static_cast<void **> (ppData)) = data[1].pData;
+
+	mapping->remove(data[1].id);
+	data[1] = data[currSize--];
+	percolateDown(1);
+	return 0;
+}
+
+int heap::remove(const std::string &id, int *pKey, void *ppData) {
+	bool b;
+	node *pn = static_cast<node *>(mapping->getPointer(id, &b));
+	int pos = getPos(pn);
+	if (b == false || pos == 0) return 1;
+	if (pKey) *pKey = data[pos].key;
+	if(ppData) *(static_cast<void **> (ppData)) = data[pos].pData;
+
+	mapping->remove(data[pos].id);
+	data[pos] = data[currSize--];
+
+	percolateDown(pos);
+	percolateUp(pos);
 	return 0;
 }
