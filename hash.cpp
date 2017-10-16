@@ -1,28 +1,45 @@
-#include <iostream>
-#include <string>
 #include "hash.h"
 
-hashTable::hashTable(int size){
-	capacity = getPrime(size);
+using namespace std;
+
+hashTable::hashTable(int size) {
 	filled = 0;
-	data.assign(capacity, hashItem("",false,false,NULL));
+	capacity = getPrime(size);
+	data.assign(capacity, hashItem("", false, false, NULL));
 }
 
-int hashTable::insert(const std::string &key, void *pv){
+hashTable::hashItem::hashItem() {
+	key = "";
+	isOccupied = false;
+	isDeleted = false;
+	pv = NULL;
+}
+
+hashTable::hashItem::hashItem(std::string key, bool isOccupied, bool isDeleted, void *pv) :
+	key(key), isOccupied(isOccupied), isDeleted(isDeleted), pv(pv) {};
+
+// Insert the specified key into the hash table.
+// If an optional pointer is provided,
+// associate that pointer with the key.
+// Returns 0 on success,
+// 1 if key already exists in hash table,
+// 2 if rehash fails.
+int hashTable::insert(const std::string &key, void *pv) {
+	//rehash if half of the table is filled
 	if(capacity == 0 || filled > capacity/2){
 		if(rehash() == false){
 			return 2;
 		}
 	}
 
-	if(contains(key)){
-		std::cerr<< "Error: Key exists" <<std::endl;
-		return 1;
-	}
+	//return 1 if key exists
+	if(contains(key)) return 1;
 
+	//otherwise insert
 	hashItem *itemToInsert = new hashItem(key, true, false, NULL);
 	int position = hash(key);
 
+	//linear probing
 	while(data.at(position).isOccupied){
 		position++;
 		if(position == capacity) position = 0;
@@ -30,49 +47,76 @@ int hashTable::insert(const std::string &key, void *pv){
 
 	data.at(position) = *itemToInsert;
 	filled++;
-
 	return 0;
-	
 }
 
 // Check if the specified key is in the hash table.
 // If so, return true; otherwise, return false.
-bool hashTable::contains(const std::string &key){
-	if(findPos(key) == -1) return false;
-	return true;
+bool hashTable::contains(const std::string &key) {
+	if (findPos(key) == -1) return false;
+	else return true;
 }
 
-hashTable::hashItem::hashItem(const std::string &key, bool isOccupied, bool isDeleted, void *pv)
-    :key(key), isOccupied(isOccupied), isDeleted(isDeleted), pv(pv) { }
-
-void *hashTable::getPointer(const std::string &key, bool *b){
-
-}
-
-int hashTable::setPointer(const std::string &key, void *pv){
-
-}
-
-bool hashTable::remove(const std::string &key){
-	return false;
-}
-
-int hashTable::hash(const std::string &key){
-	int hashVal = 0;
-	for(int i = 0; i < key.size(); i++){
-		hashVal = 37 * hashVal + key.at(i);
+// Get the pointer associated with the specified key.
+// If the key does not exist in the hash table, return NULL.
+// If an optional pointer to a bool is provided,
+// set the bool to true if the key is in the hash table,
+// and set the bool to false otherwise.
+void *hashTable::getPointer(const std::string &key, bool *b) {
+	int index = findPos(key);
+	if (index == -1) {
+		*b = false;
+		return NULL;
 	}
-	int moduloHashVal = hashVal % capacity;
-	if(moduloHashVal < 0) moduloHashVal += capacity;
-	return moduloHashVal;
+	else {
+		*b = true;
+		return data[index].pv;
+	}
 }
 
-int hashTable::findPos(const std::string &key){
+// Set the pointer associated with the specified key.
+// Returns 0 on success,
+// 1 if the key does not exist in the hash table.
+int hashTable::setPointer(const std::string &key, void *pv){
+	int index = findPos(key);
+	if (index == -1) {
+		return 1;
+	}
+	else {
+		data[index].pv = pv;
+		return 0;
+	}
+}
+
+
+// Delete the item with the specified key.
+// Returns true on success,
+// false if the specified key is not in the hash table.
+bool hashTable::remove(const std::string &key) {
+	int tmpHash = findPos(key);
+	if (tmpHash == -1) {
+		return false;
+	}
+	else {
+		data[tmpHash].isDeleted = true;
+		return true;
+	}
+}
+
+// The hash function.
+int hashTable::hash(const std::string &key) {
+	unsigned int hash = 5381;
+	for(int i = 0; i < key.length(); i++)  hash = ((hash << 5) + hash) + key.at(i); 
+	hash = hash%capacity;
+    return (int) hash;
+}
+
+// Search for an item with the specified key.
+// Return the position if found, -1 otherwise.
+int hashTable::findPos(const std::string &key) {
 	int position = hash(key);
-	//std::cout<< "position: " << position << std::endl;
 	while(data.at(position).isOccupied == true){
-		//std::cout<<"error?"<<std::endl;
-		if(data.at(position).key.compare(key) == 0){
+		if((data.at(position).key.compare(key) == 0)&&(!data.at(position).isDeleted)){
 			return position;
 		}
 		position++;
@@ -81,28 +125,31 @@ int hashTable::findPos(const std::string &key){
 	return -1;
 }
 
-bool hashTable::rehash(){
+// The rehash function; makes the hash table bigger.
+// Returns true on success, false if memory allocation fails.
+bool hashTable::rehash() {
 	capacity = getPrime(filled);
 	if(capacity == 0){
-		std::cout<< "Error: Rehash Failed. Data set too big." <<std::endl;
+		cout<< "Error: Rehash Failed. Data set too big." <<endl;
 		return false;
 	}
-	std::vector<hashItem> tmp = data;
+	vector<hashItem> tmp = data;
 	data.assign(capacity,hashItem("",false,false,NULL));
 	filled = 0;
-	for(std::vector<hashItem>::iterator it = tmp.begin(); it!=tmp.end(); it++){
+	for(vector<hashItem>::iterator it = tmp.begin(); it!=tmp.end(); it++){
 		if(it->isOccupied) insert(it->key);
 	}
 	return true;
 }
 
-unsigned int hashTable::getPrime(int size){
-	static unsigned int primeList[] = {50021, 100003, 200003, 500009, 1000003, 2000003 };
+// Return a prime number at least as large as size.
+// Uses a precomputed sequence of selected prime numbers.
+unsigned int hashTable::getPrime(int size) {
+	static unsigned int primeList[] = {50021, 100003, 200003, 500009, 1000003, 2000003, 4000037, 10000019};
 	for(int i = 0; i < 6; i++){
 		if(primeList[i]/2 > size){
 			return primeList[i];
 		}
 	}
-	return 0; //no appropriate prime found
+	return -1;
 }
-
