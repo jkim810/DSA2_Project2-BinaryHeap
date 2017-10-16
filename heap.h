@@ -1,37 +1,35 @@
 #ifndef _HEAP_H
 #define _HEAP_H
 
-#include <iostream>
 #include "hash.h"
 
-// heap - The constructor allocates space for the nodes of the heap
-// and the mapping (hash table) based on the specified capacity
-//
 class heap {
-
 private:
 	class node { // An inner class within heap
 	public:
-	    std::string id; // The id of this node
-	    int key; // The key of this node
-	    void *pData; // A pointer to the actual data
-
-	    node();
-	    node(std::string id, int key, void *pData);
+		std::string id = ""; // The id of this node
+		int key; // The key of this node
+		void *pData; // A pointer to the actual data
 	};
-	
+
+	bool isEmpty();
 	void percolateUp(int posCur);
 	void percolateDown(int posCur);
 	int getPos(node *pn);
 
-public:
-
-	heap(int capacity);
-	
+	int capacity;
+	int currSize;
 	std::vector<node> data; // The actual binary heap
 	hashTable *mapping; // maps ids to node pointers
 
-	//
+public:
+
+	//void printHeap();
+
+	// heap - The constructor allocates space for the nodes of the heap
+	// and the mapping (hash table) based on the specified capacity
+	heap(int capacity);
+
 	// insert - Inserts a new node into the binary heap
 	//
 	// Inserts a node with the specified id string, key,
@@ -43,10 +41,8 @@ public:
 	//   1 if the heap is already filled to capacity
 	//   2 if a node with the given id already exists (but the heap
 	//     is not filled to capacity)
-	//
 	int insert(const std::string &id, int key, void *pv = NULL);
-	
-	//
+
 	// setKey - set the key of the specified node to the specified value
 	//
 	// I have decided that the class should provide this member function
@@ -55,10 +51,8 @@ public:
 	// Returns:
 	//   0 on success
 	//   1 if a node with the given id does not exist
-	//
 	int setKey(const std::string &id, int key);
-	
-	//
+
 	// deleteMin - return the data associated with the smallest key
 	//             and delete that node from the binary heap
 	//
@@ -70,10 +64,9 @@ public:
 	// Returns:
 	//   0 on success
 	//   1 if the heap is empty
-	//
 	int deleteMin(std::string *pId = NULL, int *pKey = NULL, void *ppData = NULL);
 	
-	//
+
 	// remove - delete the node with the specified id from the binary heap
 	//
 	// If pKey is supplied, write to that address the key of the node
@@ -83,11 +76,6 @@ public:
 	// Returns:
 	//   0 on success
 	//   1 if a node with the given id does not exist
-	//
 	int remove(const std::string &id, int *pKey = NULL, void *ppData = NULL);
-	
-
-
 };
-
-#endif //_HEAP_H
+#endif
